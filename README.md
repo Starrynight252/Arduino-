@@ -71,3 +71,8 @@ SoftwareSerial.h	标
 互不冲突(不同密码)也可以同密码需改下。
 蓝牙连接上可提示。
 有任何问题会亮灯并在usb波特9800报错。
+
+请复制Otherfunctions.cpp和Passwordlock.h和Passwordlock.ino文件
+如果没有使用的标库文件请留言或联系我.
+个人邮箱:Starry_night_mc@outlook.com
+有BUG也反馈.
