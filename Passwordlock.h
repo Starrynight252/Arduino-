@@ -5,6 +5,7 @@
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h> //引用I2C库
 #include <SoftwareSerial.h> 
+#include <EEPROM.h>
 
 #define Password_Max 5 //密码长度
 
