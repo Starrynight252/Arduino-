@@ -168,7 +168,7 @@ void loop()//在main ()中for( ; ; ;)调用
         }
       }//
   }
-  delay(1000);
+  delay(150);
 }
 
 
