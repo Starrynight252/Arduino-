@@ -68,23 +68,26 @@ void loop()//在main ()中for( ; ; ;)调用
 {
   char auxiliary; //辅助键使用(决定程序走向)
   //每次只让执行一遍,否则重复打印
-  if (ergodic == 10)
+  if (Serial.available())
   {
-    
-    lcd.clear();  // 清屏
-    lcd.setCursor(4, 0);               //设置显示指针
-    lcd.print("Welcome");
-    lcd.setCursor(1, 1);
-    lcd.print("# Key");
+    while (Serial.available())
+    { // 当串口还有信息后
+       Serial.read();
+    }//清空缓冲区+密码错误
     Serial.println();
      for(ergodic=0;ergodic<Password_Max;ergodic++)
        Serial.print(User_Password[ergodic]);
   }
-  ergodic = 0;
 
- 
-    Strand_door();//串口开门
 
+    lcd.clear();  // 清屏
+    lcd.setCursor(4, 0);               //设置显示指针
+    lcd.print("Welcome");
+    lcd.setCursor(1, 1);
+    lcd.print("# Key start");
+    
+      Strand_door();//串口开门
+    
    auxiliary = keypad.getKey();
     delay(5);
    if ((auxiliary != NO_KEY) && auxiliary == '#')
@@ -94,9 +97,9 @@ void loop()//在main ()中for( ; ; ;)调用
       //开始
       lcd.clear();  // 清屏
       lcd.setCursor(0, 0);
-      lcd.print("#in pd");   //输入密码
+      lcd.print("# key in pd");   //输入密码
       lcd.setCursor(0, 1);
-      lcd.print("*ce pd");  //改密码
+      lcd.print("* key ce pd");  //改密码
 
       while(1)
       {
@@ -115,7 +118,7 @@ void loop()//在main ()中for( ; ; ;)调用
             {
               lcd.clear();  // 清屏
               lcd.setCursor(0, 0);
-              ergodic = 10;
+              
               Number_Errors=0;
               break;  //密码相等
             }
@@ -155,7 +158,7 @@ void loop()//在main ()中for( ; ; ;)调用
                 else
                  lcd.print("NO!"); 
 
-                ergodic = 10;
+              
                 delay(2000);
                 break;  //密码相等       
              }
@@ -165,6 +168,7 @@ void loop()//在main ()中for( ; ; ;)调用
         }
       }//
   }
+  delay(1000);
 }
 
 
@@ -181,7 +185,7 @@ bool Hardware_password() //硬件密码处理
       { //相等
         lcd.clear();  // 清屏
         lcd.setCursor(0, 0);
-        lcd.print("Ud");
+        lcd.print("Yes");
 
         digitalWrite(reach, LOW);
         delay(reac_time);
@@ -265,72 +269,68 @@ char Serial_port()
   }
   return serialData;
 }
-
-
 //串口开门
+
+
 void Strand_door()
 {
-  char option='0';
-  while((analogRead(BT_testing))>300&&BT.available())
+    char option='.';
+  while((analogRead(BT_testing))>300)
   {
-    //
-    do{
-      lcd.clear();  // 清屏
-      lcd.setCursor(0, 0);
-      lcd.print("Serial input");
-      BT.println("4s");
-      BT.println("1 ln pd");
-      BT.println("2 Ce pd\n");
-   }while(option!='0');
-
+    lcd.clear();  // 清屏
+    lcd.setCursor(0, 0);
+    lcd.print("Serial input");
    delay(5); 
    option=Serial_port(); //获取 1-开门 2-改密码
    if (option== '1'||option=='2') //1-开门
    {
-     //
      while (BT.available())
       { // 当串口还有信息后
         BT.read();
       }//主要清空缓冲区
         //请输入密码
-      BT.println("Please input a password:");
+      BT.println("In password:");
       //获取
       delay(4500);  //4.5s等待用户输入
       for (ergodic = 0; ergodic < Password_Max; ergodic++)
         Temporary_password[ergodic] = Serial_port();
       delay(5);
-      while (BT.available())
+      while(BT.available())
       { // 当串口还有信息后
         BT.read();
         Temporary_password[Password_Max]='Q';
       }//清空缓冲区+密码错误
-      if((BtSrialPort_data_processing(Temporary_password))==false)
+
+      if(!BtSrialPort_data_processing(Temporary_password))
       break;
       //比较
-      if((Password_Comparison(Temporary_password,User_Password)))
+
+      if(Password_Comparison(Temporary_password,User_Password))
       {
         //相等
-         BT.println("Ud");
+        BT.println("Yes");
         //相等
         lcd.clear();  // 清屏
         lcd.setCursor(0, 0);
-        lcd.println("Ud");
-        if(option=='1')
+        lcd.print("Yes");
+
+        if(option=='1'&&option!='2')
         {
           //开门
           digitalWrite(reach, LOW);
           delay(reac_time);
           digitalWrite(reach, HIGH);
+          return ;  //完成返回
         }
-        else if(option=='2')
-        {
+        else{
           //改密码
-          BT.print("In new pd:");
+          BT.println("In new pd:");
            //获取
           delay(4500);  //4.5s等待用户输入
           for (ergodic = 0; ergodic < Password_Max; ergodic++)
             Temporary_password[ergodic] = Serial_port();
           delay(5);
+
           while (BT.available())
           { // 当串口还有信息后
             BT.read();
@@ -352,11 +352,13 @@ void Strand_door()
                while(1)
                 Error_lnterrupt(1);
            }  
-          BT.print("\nNew pd:");
+          BT.println("New pd:");
           //打印密码
           for (ergodic = 0; ergodic < Password_Max; ergodic++)
             BT.print(User_Password[ergodic]);
             BT.println();
+            delay(5); 
+            return ;  //完成返回
         }
      
       }
@@ -366,7 +368,16 @@ void Strand_door()
    else
     continue;
   }
-  BT.print("\nPd error");
+  if(option!='.'||Temporary_password[Password_Max]=='Q')
+  {
+    BT.println("Pd error");
+    while (BT.available())
+    { // 当串口还有信息后
+      BT.read();
+    }//清空缓冲区+密码错误
+    return ;//完成返回
+  }
+  delay(10);  
 }//Strand_door()
 
 
